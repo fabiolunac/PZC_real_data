@@ -4,13 +4,13 @@ close all
 
 % Initial conditions
 repetition = 150; % Number of repetition of data
-name = "ATLAS_run520451_MD4_CH0_iter9.mat" % Name of the real data file to be loaded
+name = "../data/ATLAS_run520451_MD4_CH0_iter9.mat"; % Name of the real data file to be loaded
 M_Factor = 454; % PZC Factor
 pedestal_first_guess = 0; % Used to help pzc track the pedestal faster. It can be set as 0 w/o problem
 
 % Loading the Bunch Train Pattern
-load("./bunch_train.mat");
-load("bunch_train_520451.mat");
+load("../data/bunch_train.mat");
+load("../data/bunch_train_520451.mat");
 
 % Loading input data
 load(name);
@@ -18,6 +18,8 @@ load(name);
 % Adjusting the data to match to the long gap region (it is different for
 % every dataset provided by Fernando)
 hg_adjusted = double(hg(3209-30:13900-30));
+
+% hg_adjusted = flip(hg_adjusted);
 
 % Ajusting the bunch train pattern to match to data 
 bt_520451_mask_rot = [bt_520451_mask(64:end);bt_520451_mask(1:63)];
@@ -42,7 +44,22 @@ t_stable = N_samples*25e-9;
 pzc_out_fix = fix(pzc_out);
 
 % Fix hg data
-hg_extended_fix = hg_extended - 145;
+hg_extended_fix = hg_extended - 148;
+
+%% Save hg data to use in FPGA
+nbits =  12;
+hg_int = round(hg_extended);
+
+hg_twos = mod(hg_int, 2^nbits);
+
+% Salva em hex, um valor por linha
+fid = fopen('../data/hg_extended.hex', 'w');
+fprintf(fid, '%03X\n', hg_twos);
+fclose(fid);
+
+fprintf('Salvo %d amostras em hg_extended.hex\n', length(hg_twos));
+
+% S
 
 %% Finding the stable time
 tol = 0.1;                                       
@@ -64,7 +81,7 @@ intercept = p(2);
 %% Error comparison
 err = hg_extended_fix - pzc_out_fix;
 % n = n_stable:length(pzc_out_fix);
-n = n_stable:n_stable*1.0
+n = n_stable:n_stable*1.05;
 
 figure;
 
@@ -95,7 +112,7 @@ grid on;
 xlim([0 length(hg)]);
 
 set(gca, fontsize=11);
-saveas(gcf, './6a195856056dd9820d006e37/images/original_data.png');
+% saveas(gcf, './6a195856056dd9820d006e37/images/original_data.png');
 
 
 
@@ -114,7 +131,7 @@ title('PZC Pedestal Tracking — Full Signal');
 legend('Raw Signal', 'PZC Output', 'Pedestal Estimate', 'Location', 'northeast');
 grid on;
 set(gca, 'FontSize', 11);
-saveas(gcf, './6a195856056dd9820d006e37/images/pzc_pedestal_tracking.png');
+% saveas(gcf, './6a195856056dd9820d006e37/images/pzc_pedestal_tracking.png');
 
 %% Zoomed view
 figure;
@@ -132,7 +149,7 @@ legend('Raw Signal', 'PZC Output', 'Location', 'northeast');
 grid on;
 ylim([-15 15]);
 set(gca, 'FontSize', 11);
-saveas(gcf, './6a195856056dd9820d006e37/images/pzc_zoomed_view.png');
+% saveas(gcf, './6a195856056dd9820d006e37/images/pzc_zoomed_view.png');
 
 %% Histogram comparison
 figure;
@@ -149,7 +166,7 @@ title('Amplitude Distribution — Steady-State Region');
 legend('Raw Signal', 'PZC Output', 'Location', 'northeast');
 grid on;
 set(gca, 'FontSize', 11);
-saveas(gcf, './6a195856056dd9820d006e37/images/histogram_comparison.png');
+% saveas(gcf, './6a195856056dd9820d006e37/images/histogram_comparison.png');
 
 %% Correlation graph
 figure;
@@ -168,4 +185,4 @@ plot(xfit, xfit + c, 'k--', 'LineWidth', 1);
 hold off;
 legend('Data', sprintf('y = x (45° ref)'), 'Location', 'northwest');
 axis equal;
-saveas(gcf, './6a195856056dd9820d006e37/images/correlation_pzc.png');
+% saveas(gcf, './6a195856056dd9820d006e37/images/correlation_pzc.png');

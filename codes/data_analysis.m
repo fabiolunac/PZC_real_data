@@ -59,6 +59,14 @@ fclose(fid);
 
 fprintf('Salvo %d amostras em hg_extended.hex\n', length(hg_twos));
 
+% Saving bt mask
+bt_mask_int = round(bt_mask_extended);
+bt_twos = mod(bt_mask_int, 2^nbits);
+
+fid_bt = fopen('../data/bt_mask.hex', 'w');
+fprintf(fid_bt, '%03X\n', bt_twos);
+fclose(fid_bt);
+
 %% Finding the stable time
 tol = 0.1;                                       
 final_ped = median(pedestal_vec(end-1000:end));  
