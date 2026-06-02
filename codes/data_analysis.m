@@ -46,6 +46,19 @@ pzc_out_fix = fix(pzc_out);
 % Fix hg data
 hg_extended_fix = hg_extended - 148;
 
+%% Save hg data to use in FPGA
+nbits =  12;
+hg_int = round(hg_extended);
+
+hg_twos = mod(hg_int, 2^nbits);
+
+% Salva em hex, um valor por linha
+fid = fopen('../data/hg_extended.hex', 'w');
+fprintf(fid, '%03X\n', hg_twos);
+fclose(fid);
+
+fprintf('Salvo %d amostras em hg_extended.hex\n', length(hg_twos));
+
 %% Finding the stable time
 tol = 0.1;                                       
 final_ped = median(pedestal_vec(end-1000:end));  
