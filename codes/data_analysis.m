@@ -84,29 +84,29 @@ p = polyfit(x, y, 1);
 slope = p(1);
 intercept = p(2);
 
-%% Error comparison
-err = hg_extended_fix - pzc_out_fix;
-% n = n_stable:length(pzc_out_fix);
-n = n_stable:n_stable*1.05;
-
-figure;
-
-ax1 = subplot(211);
-plot(n, hg_extended_fix(n));
-hold on;
-plot(n, pzc_out_fix(n));
-hold off;
-ylabel('Amplitude [ADC counts]');
-legend('Raw (fix)', 'PZC (fix)');
-grid on;
-
-ax2 = subplot(212);
-plot(n, err(n));
-xlabel('Sample');
-ylabel('Error [ADC counts]');
-grid on;
-% xlim([n_stable n_stable*1.000001])
-linkaxes([ax1 ax2], 'x');
+% %% Error comparison
+% err = hg_extended_fix - pzc_out_fix;
+% % n = n_stable:length(pzc_out_fix);
+% n = n_stable:n_stable*1.05;
+% 
+% figure;
+% 
+% ax1 = subplot(211);
+% plot(n, hg_extended_fix(n));
+% hold on;
+% plot(n, pzc_out_fix(n));
+% hold off;
+% ylabel('Amplitude [ADC counts]');
+% legend('Raw (fix)', 'PZC (fix)');
+% grid on;
+% 
+% ax2 = subplot(212);
+% plot(n, err(n));
+% xlabel('Sample');
+% ylabel('Error [ADC counts]');
+% grid on;
+% % xlim([n_stable n_stable*1.000001])
+% linkaxes([ax1 ax2], 'x');
 
 %% Original Data
 figure;
@@ -119,9 +119,6 @@ xlim([0 length(hg)]);
 
 set(gca, fontsize=11);
 % saveas(gcf, './6a195856056dd9820d006e37/images/original_data.png');
-
-
-
 
 %% Plotting the data and PZC
 figure;
@@ -192,3 +189,12 @@ hold off;
 legend('Data', sprintf('y = x (45° ref)'), 'Location', 'northwest');
 axis equal;
 % saveas(gcf, './6a195856056dd9820d006e37/images/correlation_pzc.png');
+
+%% FPGA Output
+
+pzc_fpga = load("../data/pzc_out.txt");
+
+figure;
+plot(hg_extended);
+hold on;
+plot(pzc_fpga);
