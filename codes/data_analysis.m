@@ -193,8 +193,11 @@ axis equal;
 %% FPGA Output
 
 pzc_fpga = load("../data/pzc_out.txt");
+ped_fpga = load("../data/ped_out.txt");
 
 figure;
 plot(hg_extended);
 hold on;
 plot(pzc_fpga);
+plot(ped_fpga);
+legend('Input Data', 'PZC Out', 'Pedestal Tracking');
