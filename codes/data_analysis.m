@@ -1,0 +1,173 @@
+clc
+clear all
+close all
+
+% Initial conditions
+repetition = 150; % Number of repetition of data
+name = "../data/ATLAS_run520451_MD4_CH0_iter9.mat"; % Name of the real data file to be loaded
+M_Factor = 454; % PZC Factor
+pedestal_first_guess = 0; % Used to help pzc track the pedestal faster. It can be set as 0 w/o problem
+
+% Loading the Bunch Train Pattern
+load("../data/bunch_train.mat");
+load("../data/bunch_train_520451.mat");
+
+% Loading input data
+load(name);
+
+% Adjusting the data to match to the long gap region (it is different for
+% every dataset provided by Fernando)
+hg_adjusted = double(hg(3209-30:13900-30));
+
+% hg_adjusted = flip(hg_adjusted);
+
+% Ajusting the bunch train pattern to match to data 
+bt_520451_mask_rot = [bt_520451_mask(64:end);bt_520451_mask(1:63)];
+bt_mask = bt_520451_mask';
+% bt_mask = [bunch_pat,0];
+
+% Extending the data output and the bunch train mask to test pzc pedestal
+% tracking
+hg_extended = repmat(hg_adjusted, 1, repetition);
+bt_mask_extended = repmat(bt_mask, 1, repetition*3);
+
+% Number of samples
+N_samples = length(hg_extended);
+
+% Time to stable
+t_stable = N_samples*25e-9;
+
+% Applying the PZC
+[pzc_out,pedestal_vec,mean_vec] = pzc_ped_track_matlab(hg_extended,M_Factor,bt_mask_extended,pedestal_first_guess);
+
+% Fix PZC data
+pzc_out_fix = fix(pzc_out);
+
+% Fix hg data
+hg_extended_fix = hg_extended - 148;
+
+%% Finding the stable time
+tol = 0.1;                                       
+final_ped = median(pedestal_vec(end-1000:end));  
+n_stable = find(abs(pedestal_vec - final_ped) < tol, 1, 'first');
+t_stable = (n_stable-1) * 25e-9;
+
+fprintf('Estabilização detectada na amostra %d (~%.2f ms)\n', ...
+    n_stable, t_stable*1e3);
+
+%% Fit
+x = hg_extended(n_stable:end);
+y = pzc_out_fix(n_stable:end);
+
+p = polyfit(x, y, 1);
+slope = p(1);
+intercept = p(2);
+
+%% Error comparison
+err = hg_extended_fix - pzc_out_fix;
+% n = n_stable:length(pzc_out_fix);
+n = n_stable:n_stable*1.05;
+
+figure;
+
+ax1 = subplot(211);
+plot(n, hg_extended_fix(n));
+hold on;
+plot(n, pzc_out_fix(n));
+hold off;
+ylabel('Amplitude [ADC counts]');
+legend('Raw (fix)', 'PZC (fix)');
+grid on;
+
+ax2 = subplot(212);
+plot(n, err(n));
+xlabel('Sample');
+ylabel('Error [ADC counts]');
+grid on;
+% xlim([n_stable n_stable*1.000001])
+linkaxes([ax1 ax2], 'x');
+
+%% Original Data
+figure;
+plot(hg);
+xlabel('Sample');
+ylabel('Amplitude [ADC Counts]');
+title('Input Signal - (A8 ch36)');
+grid on;
+xlim([0 length(hg)]);
+
+set(gca, fontsize=11);
+% saveas(gcf, './6a195856056dd9820d006e37/images/original_data.png');
+
+
+
+
+%% Plotting the data and PZC
+figure;
+% subplot(2,1,1);
+plot(hg_extended, 'LineWidth', 0.5);
+hold on;
+plot(pzc_out_fix, 'LineWidth', 0.5);
+plot(pedestal_vec, 'LineWidth', 1.5, 'LineStyle', '--');
+hold off;
+xlabel('Sample');
+ylabel('Amplitude [ADC counts]');
+title('PZC Pedestal Tracking — Full Signal');
+legend('Raw Signal', 'PZC Output', 'Pedestal Estimate', 'Location', 'northeast');
+grid on;
+set(gca, 'FontSize', 11);
+% saveas(gcf, './6a195856056dd9820d006e37/images/pzc_pedestal_tracking.png');
+
+%% Zoomed view
+figure;
+v1 = 1.22231e6;
+v2 = 1.2224e6;
+n = v1:v2;
+plot(n, hg_extended_fix(v1:v2), 'LineWidth', 1);
+hold on;
+plot(n, pzc_out_fix(v1:v2), 'LineWidth', 1);
+hold off;
+xlabel('Sample');
+ylabel('Amplitude [ADC counts]');
+title('PZC Pedestal Tracking (Zoom)');
+legend('Raw Signal', 'PZC Output', 'Location', 'northeast');
+grid on;
+ylim([-15 15]);
+set(gca, 'FontSize', 11);
+% saveas(gcf, './6a195856056dd9820d006e37/images/pzc_zoomed_view.png');
+
+%% Histogram comparison
+figure;
+
+idx_steady = n_stable:length(pzc_out);
+histogram(hg_extended(idx_steady), 350, 'FaceColor', [0.7 0.7 0.7], 'EdgeColor', 'none', 'FaceAlpha', 0.6);
+hold on;
+histogram(pzc_out_fix(idx_steady), 350, 'FaceColor', [0.0 0.45 0.74], 'EdgeColor', 'none', 'FaceAlpha', 0.7);
+hold off;
+xlim([-20, 300]);
+xlabel('Amplitude [ADC counts]');
+ylabel('Counts');
+title('Amplitude Distribution — Steady-State Region');
+legend('Raw Signal', 'PZC Output', 'Location', 'northeast');
+grid on;
+set(gca, 'FontSize', 11);
+% saveas(gcf, './6a195856056dd9820d006e37/images/histogram_comparison.png');
+
+%% Correlation graph
+figure;
+plot(hg_extended(n_stable:end), pzc_out_fix(n_stable:end), '.', MarkerSize=10);
+xlabel('Raw signal [ADC counts]');
+ylabel('PZC output [ADC counts]');
+title('Correlation: Raw vs PZC');
+grid on;
+hold on;
+
+xfit = linspace(min(x), max(x), 100);
+
+c = mean(y) - mean(x);
+plot(xfit, xfit + c, 'k--', 'LineWidth', 1);
+
+hold off;
+legend('Data', sprintf('y = x (45° ref)'), 'Location', 'northwest');
+axis equal;
+% saveas(gcf, './6a195856056dd9820d006e37/images/correlation_pzc.png');
