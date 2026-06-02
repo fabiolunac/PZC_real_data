@@ -191,13 +191,16 @@ axis equal;
 % saveas(gcf, './6a195856056dd9820d006e37/images/correlation_pzc.png');
 
 %% FPGA Output
-
 pzc_fpga = load("../data/pzc_out.txt");
 ped_fpga = load("../data/ped_out.txt");
 
 figure;
 plot(hg_extended);
 hold on;
-plot(pzc_fpga);
+plot(pzc_fpga/(M_Factor+1));
 plot(ped_fpga);
 legend('Input Data', 'PZC Out', 'Pedestal Tracking');
+
+%% PZC 13 bits
+pzc13b_fpga = load('../data/pzc13b_out.txt');
+ped13b_fpga = load('../data/ped13b_out.txt');
